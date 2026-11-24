@@ -462,7 +462,100 @@ code.k{font-size:13px;background:var(--card2);padding:2px 6px;border-radius:6px;
     ['Cappuccino', 40, 2.2, 3.4, 2, 'cup', 180],
   ].map(function (a, i) { return { id: 'f' + i, n: a[0], kcal: a[1], p: a[2], c: a[3], f: a[4], u: a[5] || null, ug: a[6] || null }; });
 
-  G.DATA = { EX, FIN, SLOTS, T, SPLITS, FOODS };
+  // Restaurant & takeaway dishes, per 100 g, with a typical takeaway portion.
+  // [name, kcal, protein, carbs, fat, portionName, portionGrams, searchKeywords]
+  // Calibrated against USDA FNDDS, UK McCance & Widdowson (takeaway samples) and Dutch NEVO/label data.
+  // Restaurant recipes and portions vary by ±30%. Append new dishes at the END so saved ids stay stable.
+  const TAKEAWAY = [
+    // Indian
+    ['Butter chicken (curry only)', 155, 11, 6, 10, 'takeaway portion', 350, 'indian curry murgh makhani'],
+    ['Chicken tikka masala (curry only)', 156, 12.4, 4.9, 9.8, 'takeaway portion', 350, 'indian curry'],
+    ['Chicken korma (curry only)', 185, 11, 6, 13, 'takeaway portion', 350, 'indian curry'],
+    ['Chicken curry, average takeaway', 145, 12, 2.5, 9.8, 'takeaway portion', 350, 'indian curry kip kerrie'],
+    ['Chicken jalfrezi (curry only)', 122, 12, 5, 6, 'takeaway portion', 350, 'indian curry'],
+    ['Chicken madras / vindaloo (curry only)', 140, 12, 4, 8.5, 'takeaway portion', 350, 'indian curry'],
+    ['Lamb rogan josh (curry only)', 150, 12, 4, 9.5, 'takeaway portion', 350, 'indian curry lam'],
+    ['Saag / palak paneer', 160, 7, 5, 12.5, 'takeaway portion', 300, 'indian curry spinach vegetarian'],
+    ['Chana masala (chickpea curry)', 130, 6, 15, 5, 'takeaway portion', 300, 'indian curry vegetarian vegan'],
+    ['Tarka dal (lentil curry)', 110, 5, 12, 4.5, 'takeaway portion', 300, 'indian dhal daal vegetarian vegan'],
+    ['Chicken biryani', 175, 9, 22, 5.5, 'takeaway portion', 450, 'indian rice rijst'],
+    ['Pilau rice', 165, 3, 30, 3.5, 'takeaway portion', 250, 'indian rice rijst pulao'],
+    ['Naan bread, plain', 285, 7.8, 50, 7.3, 'naan', 150, 'indian bread brood'],
+    ['Garlic naan', 300, 8, 47, 9, 'naan', 150, 'indian bread brood knoflook'],
+    ['Chapati / roti', 300, 8, 46, 9.5, 'piece', 50, 'indian bread brood'],
+    ['Vegetable samosa', 260, 5, 28, 14, 'samosa', 70, 'indian starter snack'],
+    ['Onion bhaji', 270, 6, 24, 16.5, 'bhaji', 50, 'indian starter snack'],
+    ['Chicken tikka / tandoori chicken (dry)', 155, 25, 3, 5, 'takeaway portion', 200, 'indian starter grilled'],
+    ['Poppadom', 500, 11, 42, 32, 'poppadom', 13, 'indian papadum'],
+    ['Mango lassi', 100, 3, 17, 2.3, 'glass', 300, 'indian drink drank'],
+    // Thai
+    ['Pad Thai with chicken', 160, 8.5, 17, 6.5, 'takeaway portion', 400, 'thai noodles noedels'],
+    ['Thai green curry with chicken (no rice)', 145, 9, 5, 10, 'takeaway portion', 350, 'thai curry groene'],
+    ['Thai red curry with chicken (no rice)', 140, 9, 6, 9, 'takeaway portion', 350, 'thai curry rode'],
+    ['Massaman curry (no rice)', 160, 8, 10, 10, 'takeaway portion', 350, 'thai curry'],
+    ['Pad kra pao (basil chicken, no rice)', 150, 14, 5, 8, 'takeaway portion', 250, 'thai stir fry krapow'],
+    ['Tom kha gai (coconut soup)', 92, 4.5, 4, 6.5, 'bowl', 400, 'thai soup soep'],
+    ['Tom yum soup with prawns', 40, 4, 3, 1.4, 'bowl', 400, 'thai soup soep garnalen'],
+    ['Chicken satay with peanut sauce (saté ajam)', 210, 17, 7, 13, 'takeaway portion', 200, 'thai indonesian kipsaté sate pindasaus'],
+    ['Spring rolls, fried (small)', 230, 5, 26, 12, 'roll', 40, 'thai chinese starter loempia'],
+    ['Mango sticky rice', 210, 3, 38, 5.5, 'takeaway portion', 200, 'thai dessert'],
+    // Chinese / Indonesian (Dutch takeaway)
+    ['Nasi goreng', 165, 6, 22, 6, 'takeaway portion', 400, 'chinese indonesian chinees rice rijst fried rice'],
+    ['Bami goreng', 160, 6, 21, 5.8, 'takeaway portion', 400, 'chinese indonesian chinees noodles noedels chow mein'],
+    ['Babi pangang with sauce', 210, 12, 18, 10, 'takeaway portion', 300, 'chinese chinees pork varkensvlees'],
+    ['Foe yong hai with sauce', 170, 7, 10, 11.5, 'takeaway portion', 300, 'chinese chinees omelet egg ei'],
+    ['Sweet and sour chicken, battered', 200, 10, 23, 7.5, 'takeaway portion', 300, 'chinese chinees kip zoetzuur'],
+    ['Loempia (large spring roll)', 220, 7, 24, 10.5, 'loempia', 160, 'chinese indonesian chinees snackbar'],
+    ['Prawn crackers (kroepoek)', 530, 2, 60, 31, 'handful', 20, 'chinese indonesian chinees snack'],
+    // Japanese
+    ['Sushi (maki & nigiri mix)', 150, 6, 28, 1.8, 'piece', 30, 'japanese japans'],
+    ['Poke bowl with salmon', 150, 8, 18, 5, 'bowl', 450, 'japanese hawaiian zalm'],
+    ['Ramen (tonkotsu)', 110, 5.5, 12, 4.5, 'bowl', 650, 'japanese noodles noedels soup soep'],
+    ['Chicken teriyaki with rice', 148, 9, 20, 3.5, 'takeaway portion', 400, 'japanese kip rijst'],
+    ['Gyoza, pan-fried', 210, 8, 24, 9, 'piece', 25, 'japanese dumplings'],
+    // Greek / Turkish / Middle Eastern
+    ['Gyros meat (restaurant)', 190, 19, 2, 12, 'portion', 200, 'greek grieks pork varkensvlees'],
+    ['Gyros pita with tzatziki & salad', 160, 10, 18, 5.5, 'pita', 380, 'greek grieks broodje'],
+    ['Gyros plate with fries, tzatziki & salad', 210, 10.5, 15, 12, 'plate', 550, 'greek grieks schotel'],
+    ['Souvlaki (pork skewers, meat only)', 200, 26, 1, 10, 'portion (2 skewers)', 200, 'greek grieks spies'],
+    ['Tzatziki', 95, 4, 4, 7, 'portion', 50, 'greek grieks sauce saus'],
+    ['Moussaka', 140, 7, 8, 9, 'portion', 400, 'greek grieks'],
+    ['Greek salad with feta', 110, 3.5, 4, 9, 'bowl', 300, 'greek grieks salade'],
+    ['Döner / shoarma meat', 220, 18, 3, 15, 'portion', 200, 'turkish turks kebab shawarma'],
+    ['Broodje döner / shoarma with sauce', 215, 11, 20, 10, 'sandwich', 350, 'turkish turks kebab shawarma snackbar'],
+    ['Kapsalon', 246, 7.5, 13.5, 18, 'kapsalon', 500, 'dutch snackbar shoarma fries patat'],
+    ['Falafel, fried', 330, 13, 31, 17.5, 'ball', 20, 'middle eastern vegetarian vegan'],
+    ['Falafel wrap / pita', 220, 7, 28, 9, 'wrap', 300, 'middle eastern vegetarian vegan'],
+    ['Lahmacun (Turkish pizza)', 220, 9, 30, 7, 'piece', 160, 'turkish turks pizza'],
+    ['Garlic sauce (knoflooksaus)', 450, 1, 6, 47, 'portion', 30, 'sauce saus snackbar turkish'],
+    // Italian / Mexican / fast food
+    ['Pizza margherita (restaurant)', 250, 11, 33, 8, 'whole pizza', 340, 'italian italiaans'],
+    ['Pizza salami / pepperoni (restaurant)', 280, 12, 30, 12.5, 'whole pizza', 360, 'italian italiaans'],
+    ['Spaghetti bolognese', 150, 8, 18, 5, 'plate', 450, 'italian italiaans pasta'],
+    ['Lasagne', 155, 8.5, 13, 7.5, 'portion', 400, 'italian italiaans pasta'],
+    ['Pasta carbonara', 200, 9, 22, 8.5, 'plate', 400, 'italian italiaans'],
+    ['Caesar salad with chicken', 158, 11, 6, 10, 'bowl', 350, 'salad salade kip'],
+    ['Burrito with chicken', 187, 10, 22, 6.5, 'burrito', 450, 'mexican mexicaans'],
+    ['Tacos, beef', 210, 11, 18, 10.5, 'portion (2 tacos)', 200, 'mexican mexicaans'],
+    ['Cheeseburger (fast food)', 260, 14, 25, 11.5, 'burger', 120, 'fast food mcdonalds burger king'],
+    ['Big double burger (Big Mac style)', 247, 12, 20, 13, 'burger', 215, 'fast food mcdonalds burger king'],
+    ['Restaurant burger with cheese & bacon', 250, 14, 18, 13.5, 'burger', 350, 'fast food burger'],
+    ['Chicken nuggets', 270, 15, 17, 16, 'nugget', 18, 'fast food mcdonalds kfc kip'],
+    ['Fried chicken piece (KFC style)', 260, 19, 9, 16.5, 'piece', 120, 'fast food kfc kip'],
+    // Dutch snackbar
+    ['Frikandel', 251, 11, 9, 19, 'frikandel', 85, 'dutch snackbar'],
+    ['Kroket', 230, 6, 20, 14, 'kroket', 80, 'dutch snackbar croquette'],
+    ['Bitterballen', 248, 6, 20, 16, 'bitterbal', 20, 'dutch snackbar borrel'],
+    ['Kaassoufflé', 280, 8, 25, 16.5, 'piece', 80, 'dutch snackbar cheese kaas'],
+    ['Kibbeling (fried fish bites)', 230, 14, 12, 14, 'portion', 200, 'dutch snackbar fish vis'],
+    ['Fritessaus (fries sauce)', 300, 0.5, 10, 28.5, 'portion', 30, 'dutch snackbar mayonnaise saus'],
+    ['Mayonnaise', 700, 1, 2, 76, 'portion', 30, 'dutch snackbar sauce saus'],
+    ['Stroopwafel', 450, 3.5, 63, 20, 'stroopwafel', 30, 'dutch koek snack'],
+  ].map(function (a, i) { return { id: 't' + i, n: a[0], kcal: a[1], p: a[2], c: a[3], f: a[4], u: a[5], ug: a[6], k: a[7], r: true }; });
+  TAKEAWAY.forEach(function (t) { FOODS.push(t); });
+  const CUISINES = [['indian', 'Indian'], ['thai', 'Thai'], ['chinese', 'Chinese & Indonesian'], ['japanese', 'Japanese'], ['greek', 'Greek'], ['turkish', 'Turkish'], ['italian', 'Italian'], ['fast food', 'Fast food'], ['snackbar', 'Snackbar']];
+
+  G.DATA = { EX, FIN, SLOTS, T, SPLITS, FOODS, CUISINES };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>/* Pure training / nutrition logic. No DOM. Testable in Node. */
@@ -1741,10 +1834,11 @@ function searchFoods(q) {
   const hit = s => words.every(w => s.toLowerCase().includes(w));
   Object.keys(S.products).forEach(code => { const p = S.products[code]; if (!q || hit(p.n + ' ' + (p.brand || ''))) out.push(foodFrom('product', code)); });
   S.customFoods.forEach(c => { if (!q || hit(c.n)) out.push(foodFrom('custom', c.id)); });
-  if (q) D.FOODS.forEach(f => { if (hit(f.n)) out.push(foodFrom('db', f.id)); });
+  if (q) D.FOODS.forEach(f => { if (hit(f.n + ' ' + (f.k || ''))) out.push(foodFrom('db', f.id)); });
   return out.slice(0, 40);
 }
 function foodRow(f) {
+  if (f.r) return '<button class="li" data-a="food-pick" data-src="' + f.src + '" data-v="' + esc(f.id) + '"><span class="t"><b>' + esc(f.n) + '</b><span class="small muted">≈ ' + fmt(f.kcal * f.ug / 100) + ' kcal per ' + esc(f.u) + ' (' + f.ug + ' g) · P&nbsp;' + Math.round(f.p * f.ug / 100) + '&nbsp;g</span></span>' + I.plus.replace('<svg', '<svg style="width:20px;height:20px;color:var(--red)"') + '</button>';
   const per = f.serv ? 'per ' + f.u : 'per 100 g';
   return '<button class="li" data-a="food-pick" data-src="' + f.src + '" data-v="' + esc(f.id) + '"><span class="t"><b>' + esc(f.n) + '</b><span class="small muted">' + (f.brand ? esc(f.brand) + ' · ' : '') + fmt(f.kcal) + ' kcal ' + per + ' · P ' + r1(f.p) + ' g' + (f.via === 'off' ? ' · Open Food Facts' : f.src === 'product' ? ' · scanned' : f.src === 'custom' ? ' · yours' : '') + '</span></span>' + I.plus.replace('<svg', '<svg style="width:20px;height:20px;color:var(--red)"') + '</button>';
 }
@@ -1765,7 +1859,9 @@ function addSheet(meal) {
   UI.meal = meal || guessMeal();
   const html = sheetHead('Add food', 'to ' + MEALS.find(m => m[0] === UI.meal)[1]) +
     scanBtns(['<button data-a="scan-barcode">' + I.barcode + 'Barcode</button>', vision() ? '<button data-a="meal-photo">' + I.camera + 'Meal photo</button>' : '', '<button data-a="quick-add">' + I.bolt + 'Quick add</button>'].filter(Boolean), '') +
-    '<input type="search" data-filter="food" placeholder="Search foods" class="mt" autocomplete="off"><div class="card mt" style="padding:4px 16px" id="food-results">' + foodResults('') + '</div>';
+    '<input type="search" data-filter="food" id="food-q" placeholder="Search foods or dishes (e.g. butter chicken)" class="mt" autocomplete="off">' +
+    '<div class="row wrapx" style="gap:6px;margin-top:10px" aria-label="Takeaway and restaurant dishes">' + D.CUISINES.map(c => '<button class="chip" data-a="food-cat" data-v="' + c[0] + '">' + c[1] + '</button>').join('') + '</div>' +
+    '<div class="card mt" style="padding:4px 16px" id="food-results">' + foodResults('') + '</div>';
   return $('#sheets .scrim') ? replaceSheet(html) : sheet(html);
 }
 function guessMeal() { const h = new Date().getHours(); return h < 11 ? 'b' : h < 15 ? 'l' : h < 21 ? 'd' : 's'; }
@@ -1779,7 +1875,7 @@ function amountSheet(f, edit) {
   UI.amt.unit = unit; UI.amt.amount = amt; UI.amt.units = units; UI.amt.meal = edit ? edit.meal : (UI.meal || guessMeal());
   const html = sheetHead(esc(f.n), (f.brand ? esc(f.brand) + ' · ' : '') + fmt(f.kcal) + ' kcal ' + (f.serv ? 'per ' + esc(f.u) : 'per 100 g')) +
     '<div class="grid2"><div><label class="f" for="amt">Amount</label><input id="amt" data-amt="1" inputmode="decimal" value="' + esc(amt) + '"></div><div><label class="f" for="amt-unit">Unit</label><select id="amt-unit" data-amt="unit">' + units.map(u => '<option value="' + esc(u[0]) + '"' + (u[0] === unit ? ' selected' : '') + '>' + esc(u[0]) + (u[0] !== 'g' && !f.serv ? ' (' + u[1] + ' g)' : '') + '</option>').join('') + '</select></div></div>' +
-    '<div class="card mt" id="amt-out">' + amtOut() + '</div><div class="mt"><label class="f">Meal</label>' + seg('amt-meal', UI.amt.meal, MEALS) + '</div>' +
+    '<div class="card mt" id="amt-out">' + amtOut() + '</div>' + (f.r ? '<p class="tiny muted mt">Typical takeaway portion. Restaurants vary by about 30%, so pick a smaller or larger amount if your plate was different.</p>' : '') + '<div class="mt"><label class="f">Meal</label>' + seg('amt-meal', UI.amt.meal, MEALS) + '</div>' +
     '<div class="row mt2" style="gap:10px">' + (edit ? '<button class="btn" style="color:var(--red)" data-a="entry-del">' + I.trash.replace('<svg', '<svg style="width:18px;height:18px"') + '</button>' : '') + '<button class="btn primary grow" data-a="amt-save">' + (edit ? 'Save' : 'Add') + '</button></div>';
   return $('#sheets .scrim') ? replaceSheet(html) : sheet(html);
 }
@@ -2448,6 +2544,7 @@ const A = {
   // food
   'food-day': el => { const v = Number(el.dataset.v); const cur = UI.foodDate || today(); UI.foodDate = v === 0 ? null : E.addDays(cur, v); if (UI.foodDate && UI.foodDate >= today()) UI.foodDate = null; softRender(); },
   'food-add': el => addSheet(el.dataset.v === 's' ? guessMeal() : el.dataset.v),
+  'food-cat': el => { const q = $('#food-q'); if (q) q.value = el.dataset.v; const r = $('#food-results'); if (r) r.innerHTML = foodResults(el.dataset.v); $$('[data-a="food-cat"]').forEach(b => { b.style.background = b === el ? 'var(--ink)' : ''; b.style.color = b === el ? 'var(--bg)' : ''; }); },
   'food-pick': el => { const f = foodFrom(el.dataset.src, el.dataset.v); if (f) amountSheet(f); },
   'amt-meal': el => { UI.amt.meal = el.dataset.v; $$('[data-a="amt-meal"]').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === UI.amt.meal)); },
   'amt-save': () => saveAmount(),

@@ -1,5 +1,5 @@
 // Repwise service worker: makes the app open offline (e.g. in a gym basement).
-const CACHE = 'repwise-b2770de183';
+const CACHE = 'repwise-b61cdc1375';
 const SHELL = ['./', './index.html', './zxing.min.js', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
