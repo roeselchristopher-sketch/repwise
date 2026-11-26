@@ -1036,6 +1036,8 @@ code.k{font-size:13px;background:var(--card2);padding:2px 6px;border-radius:6px;
     if (m) return m[3] + '-' + pad(+m[2]) + '-' + pad(+m[1]);
     m = s.match(/(\d{1,2})\s+([a-z]{3})[a-z.]*\s+(\d{4})/);
     if (m && MONTHS[m[2]]) return m[3] + '-' + pad(MONTHS[m[2]]) + '-' + pad(+m[1]);
+    m = s.match(/([a-z]{3})[a-z.]*\s+(\d{1,2}),?\s+(\d{4})/);
+    if (m && MONTHS[m[1]]) return m[3] + '-' + pad(MONTHS[m[1]]) + '-' + pad(+m[2]);
     return today;
   }
 
@@ -2326,16 +2328,18 @@ function healthSheet() {
   return $('#sheets .scrim') ? replaceSheet(html) : sheet(html);
 }
 function healthGuide() {
-  const url = APP_URL ? APP_URL + '#health' : 'your Repwise link with #health at the end';
-  replaceSheet(sheetHead('Set up the Shortcut', 'One time, on your iPhone') +
-    '<ol class="steps small"><li>Open the <b>Shortcuts</b> app, tap <b>+</b> and name it <b>Repwise sync</b>.</li>' +
-    '<li>Add <b>Find Health Samples</b>: Type <b>Steps</b>, Start Date <b>is today</b>. Then add <b>Calculate Statistics</b> → <b>Sum</b>.</li>' +
-    '<li>Repeat for <b>Active Energy</b> and <b>Exercise Minutes</b> (Find Health Samples + Calculate Statistics → Sum).</li>' +
-    '<li>Add <b>Find Health Samples</b>: Type <b>Weight</b>, sort by <b>Start Date</b>, <b>Latest First</b>, <b>Limit 1</b>.</li>' +
-    '<li>Add a <b>Text</b> action and type:<br><code class="k">date=[Current Date]; steps=[Statistics]; active=[Statistics 2]; exercise=[Statistics 3]; weight=[Health Samples]</code><br>Insert the blue variables by tapping them above the keyboard.</li>' +
-    '<li>Add <b>Copy to Clipboard</b>, then <b>Open URLs</b> with <code class="k">' + esc(url) + '</code>.</li>' +
-    '<li>Run it once and allow Health access. Repwise opens on this screen: tap the box, <b>Paste</b>, <b>Import</b>.</li></ol>' +
-    '<p class="small muted mt">Tip: add the Shortcut to your Home Screen or Action Button. Dutch number formats (8.432 or 82,4) are understood.</p>' +
+  const b = t => '<b>' + t + '</b>';
+  replaceSheet(sheetHead('Set up the Shortcut', 'One time, on your iPhone (about 5 minutes)') +
+    '<ol class="steps small">' +
+    '<li>Open the ' + b('Shortcuts') + ' app, tap ' + b('+') + ' and name it ' + b('Repwise sync') + '.</li>' +
+    '<li>Add ' + b('Find Health Samples') + ': Type ' + b('Steps') + ', Start Date ' + b('is today') + ', Group by ' + b('Day') + '. Then add ' + b('Get Details of Health Sample') + ' → ' + b('Value') + ', and ' + b('Set Variable') + ' named ' + b('Steps') + '.</li>' +
+    '<li>Do the same for ' + b('Active Energy') + ' (variable ' + b('Active') + ') and ' + b('Exercise Minutes') + ' (variable ' + b('Exercise') + ').</li>' +
+    '<li>For weight: ' + b('Find Health Samples') + ', Type ' + b('Weight') + ', Sort by ' + b('Start Date') + ', Order ' + b('Latest First') + ', Limit ' + b('1') + ' → ' + b('Get Details of Health Sample') + ' → ' + b('Value') + ' → ' + b('Set Variable') + ' ' + b('Weight') + '.</li>' +
+    '<li>Add a ' + b('Text') + ' action and type:<br><code class="k">date=[Current Date]; steps=[Steps]; active=[Active]; exercise=[Exercise]; weight=[Weight]</code><br>Insert the blue variables from the bar above the keyboard. Tap Current Date → Date Format ' + b('Custom') + ' → <code class="k">yyyy-MM-dd</code>.</li>' +
+    '<li>Add ' + b('Copy to Clipboard') + '. Tap ▶ once and allow Health access.</li>' +
+    '<li>Open Repwise from your ' + b('Home Screen') + ', tap the Apple Watch card, tap the box, ' + b('Paste') + ', ' + b('Import') + '.</li></ol>' +
+    '<p class="small muted mt">Group by Day gives the same daily totals as the Health app, so steps from iPhone and Watch aren’t counted twice. Check Health shows energy in kcal, not kJ. Tip: add the Shortcut to your Home Screen or Action Button, or say “Hey Siri, Repwise sync”.</p>' +
+    (APP_URL ? '<p class="tiny muted mt">Use Repwise in Safari instead of from the Home Screen? Add ' + b('Open URLs') + ' at the end with <code class="k">' + esc(APP_URL) + '#health</code>. Shortcuts always opens links in Safari, which keeps separate data from the Home Screen app.</p>' : '') +
     '<button class="btn block mt2" data-a="health">Back</button>');
 }
 function importHealth(map, src) {
